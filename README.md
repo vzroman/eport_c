@@ -29,7 +29,7 @@ API
 
     Then to call it use:
 
-        {ok, Reply} = eport_c:request(<<"my_command">>, #{ my_argument => 34, another_argument => <<"some value">> })
+        {ok, Reply} = eport_c:request(PID, <<"my_command">>, #{ my_argument => 34, another_argument => <<"some value">> })
 
     When the port is not needed anymore it must be closed with:
 
