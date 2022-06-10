@@ -11,7 +11,8 @@ eport_c
 
 API
 -----
-    The C library provides the main function 
+    The C library provides the entry point function which handles the listenning loop
+    and launches the provided callback on request from Erlang program:
         
         eport_loop( callback )
 
