@@ -11,7 +11,7 @@ eport_c
 
 API
 -----
-    The library provides the main function 
+    The C library provides the main function 
         
         eport_loop( callback )
 
