@@ -6,20 +6,17 @@ BASEDIR := $(abspath $(CURDIR)/..)
 PROJECT ?= $(notdir $(BASEDIR))
 PROJECT := $(strip $(PROJECT))
 
-ERTS_INCLUDE_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~ts/erts-~ts/include/\", [code:root_dir(), erlang:system_info(version)]).")
-ERL_INTERFACE_INCLUDE_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~ts\", [code:lib_dir(erl_interface, include)]).")
-ERL_INTERFACE_LIB_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~ts\", [code:lib_dir(erl_interface, lib)]).")
-
 CJSON_INCLUDE_DIR ?= $(CURDIR)/cJSON/build/_install/include
 CJSON_LIB64_DIR ?= $(CURDIR)/cJSON/build/_install/lib64
 CJSON_LIB_DIR ?= $(CURDIR)/cJSON/build/_install/lib
 
 EPORT_C_INCLUDE_DIR ?= $(CURDIR)/eport_c/include
 
-INCLUDE_DIR = -I $(ERL_INTERFACE_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) -I $(EPORT_C_INCLUDE_DIR)
+INCLUDE_DIR = -I $(CJSON_INCLUDE_DIR) -I $(EPORT_C_INCLUDE_DIR)
 
 C_SRC_DIR = $(CURDIR)
-C_SRC_OUTPUT ?= $(CURDIR)/../priv/$(PROJECT)
+INSTALL_DIR = $(CURDIR)/../priv
+C_SRC_OUTPUT ?= $(INSTALL_DIR)/$(PROJECT).a
 
 # System type and C compiler/flags.
 
@@ -39,12 +36,12 @@ else ifeq ($(UNAME_SYS), Linux)
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 endif
 
+CC += -shared -o
+
 CFLAGS += -fPIC $(INCLUDE_DIR)
 CXXFLAGS += -fPIC $(INCLUDE_DIR)
 
-LDLIBS += -lssl -lcrypto -lpthread -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei -L $(CJSON_LIB_DIR) -L $(CJSON_LIB64_DIR) -lcjson -lcjson_utils
-
-
+LDLIBS += -L $(CJSON_LIB_DIR) -L $(CJSON_LIB64_DIR) -lcjson -lcjson_utils
 # Verbosity.
 
 c_verbose_0 = @echo " C     " $(?F);
@@ -65,7 +62,8 @@ COMPILE_CPP = $(cpp_verbose) $(CXX) $(CXXFLAGS) $(CPPFLAGS) -c
 $(C_SRC_OUTPUT): $(OBJECTS)
 	@mkdir -p $(BASEDIR)/priv/
 	$(link_verbose) $(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT)
-
+	cp -R $(EPORT_C_INCLUDE_DIR) $(INSTALL_DIR)/include
+	cp -R $(CJSON_INCLUDE_DIR)/cjson $(INSTALL_DIR)/include
 %.o: %.c
 	$(COMPILE_C) $(OUTPUT_OPTION) $<
 
@@ -79,4 +77,4 @@ $(C_SRC_OUTPUT): $(OBJECTS)
 	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
 clean:
-	@rm -f $(C_SRC_OUTPUT) $(OBJECTS)
+	@rm -rf $(C_SRC_OUTPUT) $(OBJECTS) $(INSTALL_DIR)/include

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------
-* Copyright (c) 2021 Faceplate
+* Copyright (c) 2022 Faceplate
 *
 * This file is provided to you under the Apache License,
 * Version 2.0 (the "License"); you may not use this file
@@ -22,65 +22,147 @@
 #include <string.h>
 #include "eport_c.h"
 
+//--------------protocol-----------------------------------
+cJSON *parse_request( const char *request, char **error );
+cJSON* on_ok(cJSON *response);
+cJSON* on_error(char* text);
+cJSON * create_response( cJSON *request, cJSON *response );
+
+//-------------transport----------------------------------
 int read_exact(byte *buf, int len);
 int write_exact(byte *buf, int len);
 int read_cmd(byte **buf);
-int write_cmd(byte *buf, int len);
+int write_cmd(byte *buf);
 
-enum {
-  INVALID_JSON
-};
-
+//========================THE LOOP==================================
 void eport_loop(eport_request_handler callback){
 
     byte *request;
     byte *response;
     int len = 0;
+    cJSON *requestJSON = NULL;
+    cJSON *responseJSON = NULL;
 
     //-----------the loop--------------------------
     while ( 1 ){
         request = NULL;
         response = NULL;
-        // wait for a request
+        LOGTRACE("wait for request or event");
         len = read_cmd( &request );
         if (len == EOF) {
             if (request != NULL){
                 free(request);
             }
-            LOGINFO("EXIT port");
-            goto exit;
+            break;
         }
+
+        char *error = NULL;
+        // parse JSON
+        LOGTRACE("parse the request: %s", (char *)request);
+        requestJSON = parse_request((char *)request, &error );
 
         // Handle the request with the callback
-        LOGTRACE("request received: %s",(char *)request);
-        TRY(
+        if (requestJSON != NULL){
 
-        )CATCH( exception < 5,
-            printf("caught %d\n",exception); 
-            
-        ) CATCH ( exception == INVALID_JSON,
-            LOGERROR("invalid json");
-            on_error();
-        ) FINALLY (
-            printf("finally block\n");
-        );
+            cJSON *cmd = cJSON_GetObjectItemCaseSensitive(requestJSON, "cmd");
+            cJSON *body = cJSON_GetObjectItemCaseSensitive(requestJSON, "body");
 
-        response = (byte *)callback( (char *)request );
-        // request is not needed any longer, free its memory
-        free(request);
-
-        // analyze the response
-        if ( response == NULL){
-            response = (byte *)"programming error: NULL response";
+            LOGTRACE("call the user callback");
+            responseJSON = callback(cmd->valuestring, body, &error );
+            LOGTRACE("return from the user callback");
         }
-        len = strlen( (char *)response );
-        LOGDEBUG("DEBUG: reply with %s\r\n",response);
-        write_cmd( response, len );
+
+        if (responseJSON != NULL){
+            // wrap the response
+            responseJSON = on_ok( responseJSON );
+
+        }else{
+            // there must be some error
+            if (error == NULL){
+                responseJSON = on_error( "undefined error" );
+            }else{
+                responseJSON = on_error( error );
+            }
+        }
+
+        // Build the response string
+        responseJSON = create_response( requestJSON, responseJSON );
+        response =  (byte *)cJSON_PrintUnformatted( responseJSON );
+
+        LOGTRACE("send the response: %s",(char *)response);
+        write_cmd( response );
+
+        cJSON_Delete( requestJSON ); requestJSON = NULL;
+        cJSON_Delete( responseJSON ); responseJSON = NULL;
+        free( request );
         free( response );
     }
 
-exit:
-    
+    LOGDEBUG("EXIT port");
+}
+
+//-----------------------Protocol handlers------------------------------------------------
+cJSON *parse_request( const char *request, char **error ){
+
+    cJSON *requestJSON = cJSON_Parse( request );
+
+    // Parse the request to JSON structure
+    if (requestJSON == NULL){
+        *error = "invalid request JSON";
+        goto error;
+    }
+
+    // Parse the type of the request
+    cJSON *cmd = cJSON_GetObjectItemCaseSensitive(requestJSON, "cmd");
+    if (!cJSON_IsString(cmd) || (cmd->valuestring == NULL)){
+        *error = "undefined request cmd";
+        goto error;
+    }
+
+    // Parse transaction ID
+    cJSON *tid = cJSON_GetObjectItemCaseSensitive(requestJSON, "tid");
+    if ( !cJSON_IsNumber(tid)) {
+        *error = "invalid transaction id";
+        goto error;
+    }
+
+    return requestJSON;
+
+error:
+    cJSON_Delete( requestJSON );
+    return NULL;
+}
+
+cJSON* on_ok(cJSON *response){
+    cJSON *result = cJSON_CreateObject();
+    cJSON_AddStringToObject(result, "type", "ok");
+    cJSON_AddItemToObject(result, "result", response);
+    return result;
+}
+
+cJSON* on_error(char* text){
+    cJSON *result = cJSON_CreateObject();
+    cJSON_AddStringToObject(result, "type", "error");
+    cJSON_AddStringToObject(result, "text", text);
+    return result;
+}
+
+// Build the response
+cJSON * create_response( cJSON *request, cJSON *response ){
+    cJSON *result = cJSON_CreateObject();
+
+    // Inherit command type from the request
+    cJSON *cmd = cJSON_GetObjectItemCaseSensitive(request, "cmd");
+    cJSON_AddStringToObject(result, "cmd", cmd->valuestring);
+
+    // Inherit transaction id from the request
+    cJSON *tid = cJSON_GetObjectItemCaseSensitive(request, "tid");
+    cJSON_AddNumberToObject(result, "tid", tid->valuedouble);
+
+    // Add the response body
+    cJSON_AddItemToObject(result, "reply", response);
+
+    return result;
 }
 
 //----------Read/Write helpers----------------------------------------
@@ -129,7 +211,9 @@ int read_cmd(byte **buf) {
     return read_exact(*buf, len);
 }
 
-int write_cmd(byte *buf, int len){
+int write_cmd(byte *buf){
+    int len = strlen((char *)buf);
+
     byte lbuf[HEADER_LENGTH];
     int i;
 
