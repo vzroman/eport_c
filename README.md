@@ -19,8 +19,9 @@ API
 
         cJSON *callback(char * command, cJSON * body, char **error)
 
-    When 'eport_loop' is called it enters the listenning loop. It doesn't return until the port is closed. When the request from
-    an Elang program arrives it is deserialized to cJSON * sructure and the 'callback' is called. The callback handles the request
+    When 'eport_loop' is called it enters the listenning loop. It doesn't return until the 
+    port is closed. When the request from an Elang program arrives it is deserialized 
+    to cJSON * sructure and the 'callback' is called. The callback handles the request
     and returns a response as a cJSON structure. That's it.
 
     To call your C program from Erlang you shuold start it first with:
@@ -29,7 +30,10 @@ API
 
     Then to call it use:
 
-        {ok, Reply} = eport_c:request(PID, <<"my_command">>, #{ my_argument => 34, another_argument => <<"some value">> })
+        {ok, Reply} = eport_c:request(PID, <<"my_command">>, #{ 
+            my_argument => 34, 
+            another_argument => <<"some value">> 
+        })
 
     When the port is not needed anymore it must be closed with:
 
