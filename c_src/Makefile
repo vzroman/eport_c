@@ -61,9 +61,11 @@ COMPILE_CPP = $(cpp_verbose) $(CXX) $(CXXFLAGS) $(CPPFLAGS) -c
 
 $(C_SRC_OUTPUT): $(OBJECTS)
 	@mkdir -p $(BASEDIR)/priv/
+	@cp $(CJSON_LIB_DIR)/libcjson.a $(INSTALL_DIR)
+	@cp $(CJSON_LIB_DIR)/libcjson_utils.a $(INSTALL_DIR)
+	@cp -R $(EPORT_C_INCLUDE_DIR) $(INSTALL_DIR)/include
+	@cp -R $(CJSON_INCLUDE_DIR)/cjson $(INSTALL_DIR)/include
 	$(link_verbose) $(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT)
-	cp -R $(EPORT_C_INCLUDE_DIR) $(INSTALL_DIR)/include
-	cp -R $(CJSON_INCLUDE_DIR)/cjson $(INSTALL_DIR)/include
 %.o: %.c
 	$(COMPILE_C) $(OUTPUT_OPTION) $<
 
@@ -77,4 +79,4 @@ $(C_SRC_OUTPUT): $(OBJECTS)
 	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
 clean:
-	@rm -rf $(C_SRC_OUTPUT) $(OBJECTS) $(INSTALL_DIR)/include
+	@rm -rf $(C_SRC_OUTPUT) $(OBJECTS) $(INSTALL_DIR)/include $(INSTALL_DIR)/libcjson.a $(INSTALL_DIR)/libcjson_utils.a
