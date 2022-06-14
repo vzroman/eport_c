@@ -64,11 +64,11 @@ void eport_loop(eport_request_handler callback){
         // Handle the request with the callback
         if (requestJSON != NULL){
 
-            cJSON *cmd = cJSON_GetObjectItemCaseSensitive(requestJSON, "cmd");
-            cJSON *body = cJSON_GetObjectItemCaseSensitive(requestJSON, "body");
+            cJSON *method = cJSON_GetObjectItemCaseSensitive(requestJSON, "method");
+            cJSON *args = cJSON_GetObjectItemCaseSensitive(requestJSON, "args");
 
             LOGTRACE("call the user callback");
-            responseJSON = callback(cmd->valuestring, body, &error );
+            responseJSON = callback(method->valuestring, args, &error );
             LOGTRACE("return from the user callback");
         }
 
@@ -113,9 +113,9 @@ cJSON *parse_request( const char *request, char **error ){
     }
 
     // Parse the type of the request
-    cJSON *cmd = cJSON_GetObjectItemCaseSensitive(requestJSON, "cmd");
-    if (!cJSON_IsString(cmd) || (cmd->valuestring == NULL)){
-        *error = "undefined request cmd";
+    cJSON *method = cJSON_GetObjectItemCaseSensitive(requestJSON, "method");
+    if (!cJSON_IsString(method) || (method->valuestring == NULL)){
+        *error = "undefined request method";
         goto error;
     }
 
@@ -152,8 +152,8 @@ cJSON * create_response( cJSON *request, cJSON *response ){
     cJSON *result = cJSON_CreateObject();
 
     // Inherit command type from the request
-    cJSON *cmd = cJSON_GetObjectItemCaseSensitive(request, "cmd");
-    cJSON_AddStringToObject(result, "cmd", cmd->valuestring);
+    cJSON *method = cJSON_GetObjectItemCaseSensitive(request, "method");
+    cJSON_AddStringToObject(result, "method", method->valuestring);
 
     // Inherit transaction id from the request
     cJSON *tid = cJSON_GetObjectItemCaseSensitive(request, "tid");

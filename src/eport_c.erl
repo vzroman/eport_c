@@ -57,26 +57,26 @@ start_link(App, Name, Options) ->
 stop(PID) ->
     PID ! { self(), stop }.
 
-request(PID, Command, Body)->
-    request(PID, Command, Body, undefined).
-request(PID, Command, Body, Timeout)->
+request(PID, Method, Args)->
+    request(PID, Method, Args, undefined).
+request(PID, Method, Args, Timeout)->
     TID = rand:uniform(16#FFFF),
     Request = #{
-        <<"cmd">> => Command,
+        <<"method">> => Method,
         <<"tid">> => TID,
-        <<"body">> => Body
+        <<"args">> => Args
     },
     PID ! { self(), call, jsx:encode(Request), Timeout },
-    wait_for_reply( PID, Command, TID ).
+    wait_for_reply( PID, Method, TID ).
 
-wait_for_reply( PID, Command, TID )->
+wait_for_reply( PID, Method, TID )->
     receive
         {PID, reply, {ok, Result} }-> 
             case try jsx:decode(Result, [return_maps]) catch _:_->{invalid_json, Result } end of
-                #{<<"cmd">> := Command, <<"tid">> := TID, <<"reply">> := Reply}-> 
+                #{<<"method">> := Method, <<"tid">> := TID, <<"reply">> := Reply}-> 
                     case Reply of
-                        #{<<"type">> := <<"ok">>, <<"result">> := CmdResult}->
-                            {ok, CmdResult};
+                        #{<<"type">> := <<"ok">>, <<"result">> := MethodResult}->
+                            {ok, MethodResult};
                         #{<<"type">> := <<"error">>, <<"text">> := Error}->
                             {error, Error};
                         Unexpected->
@@ -84,7 +84,7 @@ wait_for_reply( PID, Command, TID )->
                     end;
                 Unexpected->
                     ?LOGWARNING("unexpected reply from the port ~p",[Unexpected]),
-                    wait_for_reply( PID, Command, TID )
+                    wait_for_reply( PID, Method, TID )
             end;
         {PID, reply, Error }->
             Error
@@ -132,7 +132,7 @@ loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Optio
             Owner ! {self(), reply, Result},  
             loop(Port,Owner,Options);
         {Port, {data, _Data}}->
-            ?LOGWARNING("unexpected data is received from the opcua server port"),
+            ?LOGWARNING("~ts unexpected data is received from the port"),
             loop(Port, Owner, Options);
         { Owner, stop } ->
             ?LOGINFO("~ts stopping port",[Name]),
