@@ -22,8 +22,6 @@
 #include <string.h>
 #include "eport_c.h"
 
-int eport_c_loglevel = EPORT_C_LOGLEVEL_INFO;
-
 //--------------protocol-----------------------------------
 cJSON *parse_request( const char *request, char **error );
 cJSON* on_ok(cJSON *response);
