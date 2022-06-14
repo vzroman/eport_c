@@ -59,13 +59,16 @@ OBJECTS = $(addsuffix .o, $(basename $(SOURCES)))
 COMPILE_C = $(c_verbose) $(CC) $(CFLAGS) $(CPPFLAGS) -c
 COMPILE_CPP = $(cpp_verbose) $(CXX) $(CXXFLAGS) $(CPPFLAGS) -c
 
-$(C_SRC_OUTPUT): $(OBJECTS)
+build: $(C_SRC_OUTPUT)
 	@mkdir -p $(BASEDIR)/priv/
 	@cp $(CJSON_LIB_DIR)/libcjson.a $(INSTALL_DIR)
 	@cp $(CJSON_LIB_DIR)/libcjson_utils.a $(INSTALL_DIR)
 	@cp -R $(EPORT_C_INCLUDE_DIR) $(INSTALL_DIR)/include
 	@cp -R $(CJSON_INCLUDE_DIR)/cjson $(INSTALL_DIR)/include
-	$(link_verbose) $(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT)
+
+$(C_SRC_OUTPUT): $(OBJECTS)
+	$(AR) rcs $@ $<
+
 %.o: %.c
 	$(COMPILE_C) $(OUTPUT_OPTION) $<
 
