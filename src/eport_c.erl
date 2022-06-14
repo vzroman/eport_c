@@ -38,10 +38,6 @@
 %%	Control API
 %%==============================================================================
 start_link(App, Name) ->
-    Defaults = #{
-        response_timeout => ?RESPONSE_TIMEOUT,
-        no_activity_timeout => infinity
-    },
     start_link(App, Name, #{}).
 start_link(App, Name, Options) ->
     PID = spawn_link(fun()->init(App, Name, self(), #{
