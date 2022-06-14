@@ -27,7 +27,14 @@ typedef enum {
     EPORT_C_LOGLEVEL_FATAL = 5
 } EPORT_C_LOGLEVEL;
 
-static int eport_c_loglevel = EPORT_C_LOGLEVEL_INFO;
+extern int eport_c_loglevel;
+
+#ifndef eport_c_log_level
+#define eport_c_log_level
+
+int eport_c_loglevel = EPORT_C_LOGLEVEL_INFO;
+
+#endif
 
 #define LOGTRACE(...) do{ if(eport_c_loglevel <= EPORT_C_LOGLEVEL_TRACE){ fprintf(stdout,"TRACE: "); fprintf(stdout,__VA_ARGS__); fprintf(stdout,"\r\n");} } while(0)
 #define LOGDEBUG(...) do{ if(eport_c_loglevel <= EPORT_C_LOGLEVEL_DEBUG){ fprintf(stdout,"DEBUG: "); fprintf(stdout,__VA_ARGS__); fprintf(stdout,"\r\n");} } while(0)
