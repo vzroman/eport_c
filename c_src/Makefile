@@ -15,7 +15,7 @@ EPORT_C_INCLUDE_DIR ?= $(CURDIR)/eport_c/include
 INCLUDE_DIR = -I $(CJSON_INCLUDE_DIR) -I $(EPORT_C_INCLUDE_DIR)
 
 C_SRC_DIR = $(CURDIR)
-INSTALL_DIR = $(CURDIR)/../priv
+INSTALL_DIR = $(BASEDIR)/priv
 C_SRC_OUTPUT ?= $(INSTALL_DIR)/lib$(PROJECT).a
 
 # System type and C compiler/flags.
