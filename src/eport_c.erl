@@ -40,7 +40,8 @@
 start_link(App, Name) ->
     start_link(App, Name, #{}).
 start_link(App, Name, Options) ->
-    PID = spawn_link(fun()->init(App, Name, self(), #{
+    Self = self(),
+    PID = spawn_link(fun()->init(App, Name, Self, #{
             response_timeout => maps:get(response_timeout, Options, ?RESPONSE_TIMEOUT),
             no_activity_timeout =>  maps:get(no_activity_timeout, Options, infinity)
         }) end),
