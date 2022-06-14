@@ -3,7 +3,9 @@ eport_c
 
     Erlang library provides a simple way for calling programs written in C from Erlang.
     On successfull compilation the 'priv' direcory will contain:
-        * eport_c.a - library that should be statically linked with your C program,
+        * libeport_c.a - eport_c library that should be statically linked with your C program,
+        * libcjson.a - cJSON library that should be statically linked with your C program,
+        * libcjson_utils.a - cJSON library that should be statically linked with your C program,
         * include - directory with required header files.
     As an alternative to erl_interface the library uses JSON for data serialization/deserialization.
     On the Erlang side jsx (https://github.com/talentdeficit/jsx.git) is used.
@@ -18,7 +20,7 @@ API
 
     The callback is a function from your application with signature:
 
-        cJSON *callback(char * command, cJSON * body, char **error)
+        cJSON *callback(char * method, cJSON * args, char **error)
 
     When 'eport_loop' is called it enters the listenning loop. It doesn't return until the 
     port is closed. When the request from an Elang program arrives it is deserialized 
@@ -31,7 +33,7 @@ API
 
     Then to call it use:
 
-        {ok, Reply} = eport_c:request(PID, <<"my_command">>, #{ 
+        {ok, Reply} = eport_c:request(PID, <<"my_method">>, #{ 
             my_argument => 34, 
             another_argument => <<"some value">> 
         })
