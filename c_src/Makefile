@@ -60,7 +60,7 @@ COMPILE_C = $(c_verbose) $(CC) $(CFLAGS) $(CPPFLAGS) -c
 COMPILE_CPP = $(cpp_verbose) $(CXX) $(CXXFLAGS) $(CPPFLAGS) -c
 
 build: $(C_SRC_OUTPUT)
-	@mkdir -p $(BASEDIR)/priv/
+	@mkdir -p $(INSTALL_DIR)
 	@cp $(CJSON_LIB_DIR)/libcjson.a $(INSTALL_DIR)
 	@cp $(CJSON_LIB_DIR)/libcjson_utils.a $(INSTALL_DIR)
 	@cp -R $(EPORT_C_INCLUDE_DIR) $(INSTALL_DIR)/include
