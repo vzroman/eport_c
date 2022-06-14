@@ -98,7 +98,7 @@ void eport_loop(eport_request_handler callback){
         free( response );
     }
 
-    LOGDEBUG("EXIT port");
+    LOGINFO("EXIT port");
 }
 
 //-----------------------Protocol handlers------------------------------------------------
