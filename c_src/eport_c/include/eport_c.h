@@ -19,6 +19,9 @@
 #include <cjson/cJSON.h>
 #include "eport_c_log.h"
 
+#ifndef eport_c__h
+#define eport_c__h
+
 // The header of the request that defines the total lengsth of the message
 #define HEADER_LENGTH 4
 
@@ -35,3 +38,5 @@ typedef cJSON* (*eport_request_handler) (char *, cJSON *, char **);
 
 // The loop definition
 void eport_loop( eport_request_handler callback );
+
+#endif

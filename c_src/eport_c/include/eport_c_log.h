@@ -15,6 +15,8 @@
 * specific language governing permissions and limitations
 * under the License.
 ----------------------------------------------------------------*/
+#ifndef eport_c_log__h
+#define eport_c_log__h
 
 typedef enum {
     EPORT_C_LOGLEVEL_TRACE = 0,
@@ -35,5 +37,7 @@ int eport_c_loglevel = EPORT_C_LOGLEVEL_INFO;
 #define LOGFATAL(...) do{ if(eport_c_loglevel <= EPORT_C_LOGLEVEL_FATAL){ fprintf(stdout,"FATAL: "); fprintf(stdout,__VA_ARGS__); fprintf(stdout,"\r\n");} } while(0)
 
 #define SETLOGLEVEL(level) do{ eport_c_loglevel = level) } while(0)
+
+#endif
 
 
