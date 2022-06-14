@@ -36,7 +36,7 @@ static int eport_c_loglevel = EPORT_C_LOGLEVEL_INFO;
 #define LOGERROR(...) do{ if(eport_c_loglevel <= EPORT_C_LOGLEVEL_ERROR){ fprintf(stdout,"ERROR: "); fprintf(stdout,__VA_ARGS__); fprintf(stdout,"\r\n");} } while(0)
 #define LOGFATAL(...) do{ if(eport_c_loglevel <= EPORT_C_LOGLEVEL_FATAL){ fprintf(stdout,"FATAL: "); fprintf(stdout,__VA_ARGS__); fprintf(stdout,"\r\n");} } while(0)
 
-#define SETLOGLEVEL(level) do{ eport_c_loglevel = level) } while(0)
+#define SETLOGLEVEL(level) do{ eport_c_loglevel = level; } while(0)
 
 #endif
 
