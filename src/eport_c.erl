@@ -60,35 +60,10 @@ stop(PID) ->
 request(PID, Method, Args)->
     request(PID, Method, Args, undefined).
 request(PID, Method, Args, Timeout)->
-    TID = rand:uniform(16#FFFF),
-    Request = #{
-        <<"method">> => Method,
-        <<"tid">> => TID,
-        <<"args">> => Args
-    },
-    PID ! { self(), call, jsx:encode(Request), Timeout },
-    wait_for_reply( PID, Method, TID ).
-
-wait_for_reply( PID, Method, TID )->
+    PID ! { self(), call, Method, Args, Timeout },
     receive
-        {PID, reply, {ok, Result} }-> 
-            case try jsx:decode(Result, [return_maps]) catch _:_->{invalid_json, Result } end of
-                #{<<"method">> := Method, <<"tid">> := TID, <<"reply">> := Reply}-> 
-                    case Reply of
-                        #{<<"type">> := <<"ok">>, <<"result">> := MethodResult}->
-                            {ok, MethodResult};
-                        #{<<"type">> := <<"error">>, <<"text">> := Error}->
-                            {error, Error};
-                        Unexpected->
-                            {error, {unexpected_port_reply, Unexpected} }
-                    end;
-                Unexpected->
-                    ?LOGWARNING("unexpected reply from the port ~p",[Unexpected]),
-                    wait_for_reply( PID, Method, TID )
-            end;
-        {PID, reply, Error }->
-            Error
-    end.    
+        {PID, reply, Result }-> Result
+    end.  
 
 %%==============================================================================
 %%	Initialization procedure
@@ -122,17 +97,17 @@ init_ext_programm(App)->
 loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Options ) ->
     NoActivityTimeout = maps:get(no_activity_timeout, Options, infinity),
     receive
-        {Owner, call, Msg, OverrideTimeout} ->
+        {Owner, call, Method, Args, OverrideTimeout} ->
             Timeout = 
                 if
                     is_integer(OverrideTimeout) -> OverrideTimeout;
                     true -> ResponseTimeout
                 end,
-            Result = call( Port, Msg, Options, Timeout ),
+            Result = call( Port, Name, Method, Args, Timeout ),
             Owner ! {self(), reply, Result},  
             loop(Port,Owner,Options);
         {Port, {data, _Data}}->
-            ?LOGWARNING("~ts unexpected data is received from the port"),
+            ?LOGWARNING("~ts unexpected data is received from the port",[Name]),
             loop(Port, Owner, Options);
         { Owner, stop } ->
             ?LOGINFO("~ts stopping port",[Name]),
@@ -164,16 +139,47 @@ loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Optio
             exit( no_activity )
     end.
 
-call( Port, Msg, _Options, Timeout )->
-    Port ! {self(), {command, Msg}},
+call( Port, Name, Method, Args, Timeout )->
+    TID = rand:uniform(16#FFFF),
+    Request = jsx:encode(#{
+        <<"method">> => Method,
+        <<"tid">> => TID,
+        <<"args">> => Args
+    }),
+    Port ! {self(), {command, Request}},
+    wait_response( Port, Name, TID, Timeout ).
+
+wait_response(Port, Name,TID, Timeout)->
+    StartTS = erlang:system_time(millisecond),
     receive
         {Port, {data, Data}} ->
-            {ok, Data }
+            case try jsx:decode(Data, [return_maps]) catch _:_->{invalid_json, Data} end of
+                #{<<"tid">> := TID, <<"reply">> := Reply}-> 
+                    case Reply of
+                        #{<<"type">> := <<"ok">>, <<"result">> := Result}->
+                            {ok, Result};
+                        #{<<"type">> := <<"error">>, <<"text">> := Error}->
+                            {error, Error};
+                        Unexpected->
+                            {error, {unexpected_port_reply, Unexpected} }
+                    end;
+                Unexpected->
+                    ?LOGWARNING("unexpected reply from the port ~p",[Unexpected]),
+                    wait_response( Port, Name, TID, next_timeout(Timeout, StartTS) )
+            end
     after
         Timeout->
             {error, timeout}
     end.
 
+next_timeout(Timeout, StartTS) when is_integer(Timeout)->
+    Duration = erlang:system_time(millisecond) - StartTS,
+    if
+        Timeout > Duration-> Timeout - Duration;
+        true -> 0
+    end;
+next_timeout(Timeout, _StartTS)->
+    Timeout.
 
 
 
