@@ -36,6 +36,9 @@ int write_exact(byte *buf, int len);
 int read_cmd(byte **buf);
 int write_cmd(byte *buf);
 
+//-------------Internal methods--------------------------
+cJSON *set_log_level(cJSON *args, char **error);
+
 //========================THE LOOP==================================
 void eport_loop(eport_request_handler callback){
 
@@ -69,9 +72,13 @@ void eport_loop(eport_request_handler callback){
             cJSON *method = cJSON_GetObjectItemCaseSensitive(requestJSON, "method");
             cJSON *args = cJSON_GetObjectItemCaseSensitive(requestJSON, "args");
 
-            LOGTRACE("call the user callback");
-            responseJSON = callback(method->valuestring, args, &error );
-            LOGTRACE("return from the user callback");
+            if (strcmp(method->valuestring, "set_log_level") == 0){
+                responseJSON = set_log_level(args, &error);
+            }else{
+                LOGTRACE("call the user callback");
+                responseJSON = callback(method->valuestring, args, &error );
+                LOGTRACE("return from the user callback");
+            }
         }
 
         if (responseJSON != NULL){
@@ -167,6 +174,20 @@ cJSON * create_response( cJSON *request, cJSON *response ){
     return result;
 }
 
+//----------Internal methods----------------------------------------
+cJSON *set_log_level(cJSON *args, char **error){
+    cJSON *level = cJSON_GetObjectItemCaseSensitive(args, "port");
+    if (!cJSON_IsNumber(level)){
+        *error = "level is not defined";
+        return NULL;
+    }else if(level->valuedouble < EPORT_C_LOGLEVEL_TRACE || level->valuedouble > EPORT_C_LOGLEVEL_FATAL){
+        *error = "invalid log level";
+        return NULL;
+    }else{
+        SETLOGLEVEL(level->valuedouble);
+        return cJSON_CreateString("ok");
+    }
+}
 //----------Read/Write helpers----------------------------------------
 int read_exact(byte *buf, int len) {
     int i, got=0;

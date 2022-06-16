@@ -25,7 +25,8 @@
 -export([
     start_link/2,start_link/3,
     stop/1,
-    request/3, request/4
+    request/3, request/4,
+    set_log_level/2
 ]).
 
 -define(INIT_TIMEOUT,30000).
@@ -65,6 +66,11 @@ request(PID, Method, Args, Timeout)->
         {PID, reply, Result }-> Result
     end.  
 
+set_log_level(PID, Level)->
+    case request(PID, <<"set_log_level">>, Level) of
+        {ok,<<"ok">>} -> ok;
+        Error -> Error
+    end.
 %%==============================================================================
 %%	Initialization procedure
 %%==============================================================================
