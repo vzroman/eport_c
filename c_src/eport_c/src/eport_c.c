@@ -176,15 +176,14 @@ cJSON * create_response( cJSON *request, cJSON *response ){
 
 //----------Internal methods----------------------------------------
 cJSON *set_log_level(cJSON *args, char **error){
-    cJSON *level = cJSON_GetObjectItemCaseSensitive(args, "port");
-    if (!cJSON_IsNumber(level)){
+    if (!cJSON_IsNumber(args)){
         *error = "level is not defined";
         return NULL;
-    }else if(level->valuedouble < EPORT_C_LOGLEVEL_TRACE || level->valuedouble > EPORT_C_LOGLEVEL_FATAL){
+    }else if(args->valuedouble < EPORT_C_LOGLEVEL_TRACE || args->valuedouble > EPORT_C_LOGLEVEL_FATAL){
         *error = "invalid log level";
         return NULL;
     }else{
-        SETLOGLEVEL(level->valuedouble);
+        SETLOGLEVEL(args->valuedouble);
         return cJSON_CreateString("ok");
     }
 }
