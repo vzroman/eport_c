@@ -35,6 +35,15 @@
 
 -define(HEADER_LENGTH,4).
 
+-define(LOG_LEVELS, #{
+    trace => 0,
+    debug => 1,
+    info => 2,
+    warning => 3,
+    error => 4,
+    fatal => 5
+}).
+
 %%==============================================================================
 %%	Control API
 %%==============================================================================
@@ -67,9 +76,14 @@ request(PID, Method, Args, Timeout)->
     end.  
 
 set_log_level(PID, Level)->
-    case request(PID, <<"set_log_level">>, Level) of
-        {ok,<<"ok">>} -> ok;
-        Error -> Error
+    case ?LOG_LEVELS of
+        #{Level := Value} -> 
+            case request(PID, <<"set_log_level">>, Value) of
+            {ok,<<"ok">>} -> ok;
+            Error -> Error
+        end;
+    _ ->
+        {error, invalid_level}
     end.
 %%==============================================================================
 %%	Initialization procedure
