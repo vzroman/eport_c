@@ -68,15 +68,20 @@ stop(PID) ->
     PID ! { self(), stop }.
 
 request(PID, Method, Args)->
-    request(PID, Method, Args, infinity).
+    request(PID, Method, Args, undefined).
 request(PID, Method, Args, Timeout)->
     case is_process_alive( PID ) of
         true ->
+            WaitTimeout =
+                if
+                    is_integer(Timeout) -> Timeout;
+                    true -> infinity
+                end,
             PID ! { self(), call, Method, Args, Timeout },
             receive
                 {PID, reply, Result }-> Result
             after
-                Timeout -> {error, timeout}
+                WaitTimeout -> {error, timeout}
             end;
         _ ->
             {error,invalid_port}
