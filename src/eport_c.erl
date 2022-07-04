@@ -70,10 +70,17 @@ stop(PID) ->
 request(PID, Method, Args)->
     request(PID, Method, Args, undefined).
 request(PID, Method, Args, Timeout)->
-    PID ! { self(), call, Method, Args, Timeout },
-    receive
-        {PID, reply, Result }-> Result
-    end.  
+    case is_process_alive( PID ) of
+        true ->
+            PID ! { self(), call, Method, Args, Timeout },
+            receive
+                {PID, reply, Result }-> Result
+            after
+                Timeout -> {error, timeout}
+            end;
+        _ ->
+            {error,invalid_port}
+    end.    
 
 set_log_level(PID, Level)->
     case ?LOG_LEVELS of
