@@ -132,7 +132,7 @@ loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Optio
         {Owner, call, Method, Args, OverrideTimeout} ->
             Timeout = 
                 if
-                    is_integer(OverrideTimeout) -> OverrideTimeout;
+                    is_integer(OverrideTimeout); OverrideTimeout =:= infinity -> OverrideTimeout;
                     true -> ResponseTimeout
                 end,
             Result = call( Port, Name, Method, Args, Timeout ),
