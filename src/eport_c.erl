@@ -142,10 +142,19 @@ loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Optio
             ?LOGWARNING("~ts unexpected data is received from the port",[Name]),
             loop(Port, Owner, Options);
         { Owner, stop } ->
-            ?LOGINFO("~ts stop port",[Name]),
-            port_close( Port ),
-            unlink(Owner),
-            exit(normal);
+            ?LOGINFO("~ts stopping port",[Name]),
+            Port ! {self(), close},
+            receive
+                {Port, closed} ->
+                    ?LOGINFO("~ts port is closed",[Name]),
+                    unlink(Owner),
+                    exit(normal)
+            after
+                ?STOP_TIMEOUT->
+                    ?LOGERROR("~ts timeout on closing port",[Name]),
+                    port_close( Port ),
+                    exit( close_port_timeout )
+            end;
         {'EXIT', Port, Reason} ->
             ?LOGINFO("~ts port terminated",[Name]),
             exit({port_terminated, Reason});
