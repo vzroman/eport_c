@@ -1,6 +1,6 @@
 {application, eport_c,
  [{description, "An OTP library"},
-  {vsn, "0.0.1"},
+  {vsn, "0.0.2"},
   {registered, []},
   {applications,
    [kernel,
