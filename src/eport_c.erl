@@ -199,7 +199,10 @@ wait_response(Port, Name,TID, Timeout)->
                 Unexpected->
                     ?LOGWARNING("unexpected reply from the port ~p",[Unexpected]),
                     wait_response( Port, Name, TID, next_timeout(Timeout, StartTS) )
-            end
+            end;
+        {'EXIT', Port, Reason} ->
+            ?LOGINFO("~ts port terminated",[Name]),
+            exit({port_terminated, Reason})
     after
         Timeout->
             {error, timeout}
