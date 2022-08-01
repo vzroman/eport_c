@@ -79,7 +79,8 @@ request(PID, Method, Args, Timeout)->
                 end,
             PID ! { self(), call, Method, Args, Timeout },
             receive
-                {PID, reply, Result }-> Result
+                {PID, reply, Result }-> Result;
+                {'EXIT', PID, Reason}-> {error, Reason}
             after
                 WaitTimeout -> {error, timeout}
             end;
