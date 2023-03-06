@@ -70,23 +70,19 @@ stop(PID) ->
 request(PID, Method, Args)->
     request(PID, Method, Args, undefined).
 request(PID, Method, Args, Timeout)->
-    case is_process_alive( PID ) of
-        true ->
-            WaitTimeout =
-                if
-                    is_integer(Timeout) -> Timeout;
-                    true -> infinity
-                end,
-            PID ! { self(), call, Method, Args, Timeout },
-            receive
-                {PID, reply, Result }-> Result;
-                {'EXIT', PID, Reason}-> {error, Reason}
-            after
-                WaitTimeout -> {error, timeout}
-            end;
-        _ ->
-            {error,invalid_port}
-    end.    
+    TID = rand:uniform(16#FFFF),
+    PID ! { self(), call, TID, Method, Args, Timeout },
+    wait_for_reply(TID, PID).
+
+wait_for_reply(TID, PID)->
+    receive
+        {PID, reply, TID, Result }->
+            Result;
+        {PID, reply, _TID, Result }->
+            wait_for_reply( PID, TID );
+        {'EXIT', PID, Reason}->
+            {error, Reason}
+    end.
 
 set_log_level(PID, Level)->
     case ?LOG_LEVELS of
@@ -130,14 +126,14 @@ init_ext_programm(App)->
 loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Options ) ->
     NoActivityTimeout = maps:get(no_activity_timeout, Options, infinity),
     receive
-        {Owner, call, Method, Args, OverrideTimeout} ->
+        {Owner, call, TID, Method, Args, OverrideTimeout} ->
             Timeout = 
                 if
                     is_integer(OverrideTimeout); OverrideTimeout =:= infinity -> OverrideTimeout;
                     true -> ResponseTimeout
                 end,
-            Result = call( Port, Name, Method, Args, Timeout ),
-            Owner ! {self(), reply, Result},  
+            Result = call( Port, Name, TID, Method, Args, Timeout ),
+            Owner ! {self(), reply, TID, Result},
             loop(Port,Owner,Options);
         {Port, {data, _Data}}->
             ?LOGWARNING("~ts unexpected data is received from the port",[Name]),
@@ -172,8 +168,7 @@ loop( Port, Owner, #{name := Name, response_timeout := ResponseTimeout } = Optio
             exit( no_activity )
     end.
 
-call( Port, Name, Method, Args, Timeout )->
-    TID = rand:uniform(16#FFFF),
+call( Port, Name, TID, Method, Args, Timeout )->
     Request = jsx:encode(#{
         <<"method">> => Method,
         <<"tid">> => TID,
