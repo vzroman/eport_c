@@ -78,7 +78,7 @@ wait_for_reply(TID, PID)->
     receive
         {PID, reply, TID, Result }->
             Result;
-        {PID, reply, _TID, Result }->
+        {PID, reply, _TID, _Result }->
             wait_for_reply( PID, TID );
         {'EXIT', PID, Reason}->
             {error, Reason}
